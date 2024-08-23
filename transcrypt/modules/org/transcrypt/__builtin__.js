@@ -1925,8 +1925,14 @@ _dictmethods.__setitem__ = function (aKey, aValue) {
     this [aKey] = aValue;
 }
 
+__setproperty__ (dict.prototype, '__class__', { value: dict, writable: true });
+// Assign 'dict' methods to dict.prototype
+for (let [key, value] of Object.entries (_dictmethods)) {
+    __setproperty__ (dict.prototype, key, { value });
+}
+
 export function dict (objectOrPairs) {
-    var instance = {};
+    var instance = Object.create (dict.prototype);
     if (!objectOrPairs || objectOrPairs instanceof Array) { // It's undefined or an array of pairs
         if (objectOrPairs) {
             for (var index = 0; index < objectOrPairs.length; index++) {
@@ -1968,7 +1974,7 @@ export function dict (objectOrPairs) {
             }
         } else if (objectOrPairs instanceof Object) {
             // Passed object is a JavaScript object but not yet a dict, don't copy it
-            instance = objectOrPairs;
+            Object.assign (instance, objectOrPairs);
         } else {
             // We have already covered Array so this indicates
             // that the passed object is not a js object - i.e.
@@ -1976,15 +1982,6 @@ export function dict (objectOrPairs) {
             
             throw ValueError ("Invalid type of object for dict creation", new Error ());
         }
-    }
-
-    // Trancrypt interprets e.g. {aKey: 'aValue'} as a Python dict literal rather than a JavaScript object literal
-    // So dict literals rather than bare Object literals will be passed to JavaScript libraries
-    // Some JavaScript libraries call all enumerable callable properties of an object that's passed to them
-    // So the properties of a dict should be non-enumerable (default)
-    __setproperty__ (instance, '__class__', { value: dict, writable: true });
-    for (let [key, value] of Object.entries (_dictmethods)) {
-        __setproperty__ (instance, key, { value });
     }
     return instance;
 }
